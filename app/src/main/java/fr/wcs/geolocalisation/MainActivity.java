@@ -4,14 +4,13 @@ import android.Manifest;
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.pm.PackageManager;
-import android.location.Criteria;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
+import android.os.Bundle;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
-import android.os.Bundle;
 import android.widget.Toast;
 
 public class MainActivity extends AppCompatActivity {
@@ -26,8 +25,8 @@ public class MainActivity extends AppCompatActivity {
     }
 
     @Override
-    protected void onPause() {
-        super.onPause();
+    protected void onStop() {
+        super.onStop();
         if(mLocationManager != null && locationListener != null)
             mLocationManager.removeUpdates( locationListener );
     }
@@ -40,16 +39,25 @@ public class MainActivity extends AppCompatActivity {
 
     @SuppressLint("MissingPermission")
     private void initLocation() {
-        mLocationManager = (LocationManager) this.getSystemService(Context.LOCATION_SERVICE);
-        //final String myProvider = mLocationManager.getBestProvider( new Criteria(), true );
 
-        final String myProvider = LocationManager.NETWORK_PROVIDER;
+        mLocationManager = (LocationManager) this.getSystemService(Context.LOCATION_SERVICE);
+        boolean isGpsEnabled = mLocationManager.isProviderEnabled( LocationManager.GPS_PROVIDER );
+        boolean isNetworkEnabled = mLocationManager.isProviderEnabled( LocationManager.NETWORK_PROVIDER );
+
+        String myProvider = LocationManager.PASSIVE_PROVIDER;
+        if(isGpsEnabled) {
+            myProvider = LocationManager.GPS_PROVIDER;
+        } else if(isNetworkEnabled) {
+            myProvider = LocationManager.NETWORK_PROVIDER;
+        }
+        final String providerEnabled = myProvider;
+        Toast.makeText( getApplicationContext(), "INIT LOCATION WITH " + myProvider + " PROVIDER", Toast.LENGTH_SHORT ).show();
 
         locationListener = new LocationListener() {
             public void onLocationChanged(Location location) {
                 // TODO : effectuer une action ici !
-                String locationStr = mLocationManager.getLastKnownLocation( myProvider ).toString();
-                Toast.makeText( getApplicationContext(), locationStr, Toast.LENGTH_LONG ).show();
+                String locationStr = mLocationManager.getLastKnownLocation( providerEnabled ).toString();
+                Toast.makeText( getApplicationContext(), locationStr, Toast.LENGTH_SHORT ).show();
             }
 
             public void onStatusChanged(String provider, int status, Bundle extras) {}
@@ -58,7 +66,7 @@ public class MainActivity extends AppCompatActivity {
 
             public void onProviderDisabled(String provider) {}
         };
-        mLocationManager.requestLocationUpdates( myProvider, 0, 0, locationListener);
+        mLocationManager.requestLocationUpdates( providerEnabled, 0, 0, locationListener);
     }
 
     private void checkPermission() {
